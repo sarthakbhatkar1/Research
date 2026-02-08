@@ -1,0 +1,15 @@
+# Core LiteLLM
+litellm>=1.40.0
+
+# Azure SDKs
+azure-storage-blob>=12.19.0
+azure-identity>=1.15.0
+
+# Redis
+redis>=5.0.0
+
+# YAML
+pyyaml>=6.0.1
+
+# ASGI server (LiteLLM uses uvicorn)
+uvicorn[standard]>=0.27.0
