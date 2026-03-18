@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agentic AI Workflow — Private Markets MFees</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'IBM Plex Mono', monospace;
+      background: #ffffff;
+      color: #111;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    #header {
+      padding: 18px 32px 12px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: #fff;
+    }
+    #header-sub { font-size: 10px; letter-spacing: 3px; color: #6366f1; text-transform: uppercase; margin-bottom: 3px; }
+    #header-title {
+      font-size: 20px; font-weight: 800;
+      background: linear-gradient(90deg, #6366f1 0%, #0ea5e9 50%, #10b981 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    #controls { display: flex; gap: 8px; align-items: center; }
+    button {
+      font-family: 'IBM Plex Mono', monospace;
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      transition: all 0.2s;
+    }
+    #btn-reset {
+      background: #f3f4f6; border: 1px solid #d1d5db; color: #374151;
+      padding: 6px 16px;
+    }
+    #btn-reset:hover { background: #e5e7eb; }
+    #btn-play {
+      background: #6366f1; border: 1px solid #6366f1; color: #fff;
+      padding: 6px 16px;
+    }
+    #btn-play:hover { background: #4f46e5; }
+    #stage-bar {
+      padding: 10px 32px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+      background: #fafafa;
+    }
+    #stage-label { font-size: 9px; color: #9ca3af; margin-right: 6px; text-transform: uppercase; letter-spacing: 2px; }
+    .stage-btn {
+      padding: 5px 13px;
+      border-radius: 20px;
+      border: 1.5px solid #d1d5db;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .stage-btn:hover { border-color: #6b7280; color: #374151; }
+    .stage-btn.active { color: var(--sc); border-color: var(--sc); background: color-mix(in srgb, var(--sc) 12%, white); }
+    #desc-bar {
+      padding: 8px 32px;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 11px;
+      color: #9ca3af;
+      min-height: 30px;
+      background: #fff;
+      transition: color 0.3s;
+    }
+    #diagram-wrap { flex: 1; overflow: auto; padding: 16px 24px; background: #f9fafb; }
+    svg { display: block; }
+    #legend {
+      padding: 10px 32px;
+      border-top: 1px solid #e5e7eb;
+      display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+      background: #fff;
+    }
+    .leg-item { display: flex; align-items: center; gap: 5px; }
+    .leg-dot { width: 10px; height: 10px; border-radius: 2px; }
+    .leg-label { font-size: 9px; color: #6b7280; letter-spacing: 0.4px; }
+    .leg-line-wrap { margin-left: auto; display: flex; gap: 16px; align-items: center; }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <div>
+    <div id="header-sub">Demo Use Case · Private Markets MFees Extraction</div>
+    <div id="header-title">Agentic AI Workflow</div>
+  </div>
+  <div id="controls">
+    <button id="btn-reset">Reset</button>
+    <button id="btn-play">▶ Auto-Play</button>
+  </div>
+</div>
+
+<div id="stage-bar">
+  <span id="stage-label">Stages →</span>
+</div>
+
+<div id="desc-bar">Select a stage above or click any node — or hit Auto-Play</div>
+
+<div id="diagram-wrap">
+  <svg id="main-svg"></svg>
+</div>
+
+<div id="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:#6366f1"></div><span class="leg-label">Planning / LLM / RAI</span></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#10b981"></div><span class="leg-label">Tool Execution / MCP</span></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#f97316"></div><span class="leg-label">Memory / Agent State</span></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#ef4444"></div><span class="leg-label">Reflection / Evaluation</span></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#f59e0b"></div><span class="leg-label">Guardrails / Safety</span></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#0ea5e9"></div><span class="leg-label">Multi-Agent (Maker/Checker)</span></div>
+  <div class="leg-item"><div class="leg-dot" style="background:#16a34a"></div><span class="leg-label">Output</span></div>
+  <div class="leg-line-wrap">
+    <div class="leg-item">
+      <svg width="28" height="8"><line x1="0" y1="4" x2="28" y2="4" stroke="#cbd5e1" stroke-width="1.5"/></svg>
+      <span class="leg-label">Primary flow</span>
+    </div>
+    <div class="leg-item">
+      <svg width="28" height="8"><line x1="0" y1="4" x2="28" y2="4" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,3"/></svg>
+      <span class="leg-label">Feedback / retry</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const STAGES = [
+  { id:0, label:"Email Ingestion", color:"#6366f1",
+    activeNodes:["email_client","orchestrator_llm"],
+    description:"Client sends email → Orchestrator Agent receives and begins reasoning" },
+  { id:1, label:"RAI Gateway", color:"#f59e0b",
+    activeNodes:["orchestrator_llm","rai_policy","rai_guardrail","rai_obs"],
+    description:"All LLM calls pass through RAI Gateway — entitlement checks, I/O guardrails, observability" },
+  { id:2, label:"Planning", color:"#8b5cf6",
+    activeNodes:["orchestrator_llm","agent_state","action_router","plan_parse","plan_decompose","plan_replan"],
+    description:"Orchestrator plans: parse email, decompose task, maintain agent state, route to tools" },
+  { id:3, label:"MCP Tools", color:"#10b981",
+    activeNodes:["tool_db","tool_entitle","tool_ticket","tool_email","tool_sor","tool_custom"],
+    description:"Action Router dispatches to MCP tools — DB queries, entitlement extraction, ticket creation, email, SOR" },
+  { id:4, label:"Memory", color:"#f97316",
+    activeNodes:["mem_short","mem_episodic","mem_long","mem_records"],
+    description:"Memory System provides short-term context, episodic recall, and long-term client knowledge" },
+  { id:5, label:"Reflection", color:"#ef4444",
+    activeNodes:["eval_self","eval_quality"],
+    description:"Agent self-critiques output. Quality Gate decides: PASS → Maker-Checker, FAIL → Re-plan" },
+  { id:6, label:"Maker-Checker", color:"#0ea5e9",
+    activeNodes:["maker_agent","checker_agent","inter_handoff","out_sor","out_email"],
+    description:"Maker prepares change → Checker validates → Update SoR + notify client → feedback loop" },
+];
+
+const NODES = {
+  email_client:     { label:["Email","Client"],                                           type:"io",       col:0,   row:0 },
+  orchestrator_llm: { label:["LLM Core","(via RAI Gateway)","Reasoning & Decision"],      type:"agent",    col:2,   row:0 },
+  agent_state:      { label:["Agent State","Client Context","& Request Goals"],            type:"agent",    col:3,   row:0 },
+  action_router:    { label:["Action Router","Tool Selection","& Dispatch"],               type:"agent",    col:4,   row:0 },
+  rai_policy:       { label:["Policy/Model","Entitlement","Checking"],                     type:"guard",    col:6,   row:0 },
+  rai_guardrail:    { label:["Input/Output","Guardrailing"],                               type:"guard",    col:7,   row:0 },
+  rai_obs:          { label:["Observability"],                                             type:"guard",    col:6.5, row:1 },
+  plan_parse:       { label:["Parse & Extract","Email content","Client Identity"],         type:"plan",     col:0,   row:2 },
+  plan_decompose:   { label:["Task Decomposition","Prioritize entitlement","fee lookup"],  type:"plan",     col:1,   row:2 },
+  plan_replan:      { label:["Re-planning","Adapt on failure"],                            type:"plan",     col:0,   row:3 },
+  tool_db:          { label:["DB Query","Client Info","MFees Lookup"],                     type:"tool",     col:2,   row:2 },
+  tool_entitle:     { label:["Entitlement","Extraction","Parse & Summarize"],              type:"tool",     col:3,   row:2 },
+  tool_ticket:      { label:["Ticket","Creation","For Maker review"],                      type:"tool",     col:4,   row:2 },
+  tool_email:       { label:["Email Send","Client Response"],                              type:"tool",     col:2,   row:3 },
+  tool_sor:         { label:["System of Record","Update","Write back"],                    type:"tool",     col:3,   row:3 },
+  tool_custom:      { label:["Custom Tools","MCP Plugins"],                                type:"tool",     col:4,   row:3 },
+  mem_short:        { label:["Short-Term","Current request","Working memory"],             type:"mem",      col:0,   row:4 },
+  mem_episodic:     { label:["Episodic","Past request","outcomes"],                        type:"mem",      col:1,   row:4 },
+  mem_long:         { label:["Long-Term","Client entitlement","Knowledge base"],           type:"mem",      col:0,   row:5 },
+  mem_records:      { label:["Records","Datastore"],                                       type:"db",       col:1,   row:5 },
+  eval_self:        { label:["Self-Critique","Verify extraction","accuracy & completeness"],type:"eval",     col:5,   row:2 },
+  eval_quality:     { label:["Quality Gate","Entitlement validity","Safety & Relevance"],  type:"evalgate", col:5,   row:3 },
+  maker_agent:      { label:["Maker Agent","(entitlement-maker)","Reviews & prepares"],    type:"multi",    col:6,   row:2 },
+  inter_handoff:    { label:["Inter-Agent Handoff","Message Passing","& Audit Trail"],     type:"infra",    col:6,   row:3 },
+  checker_agent:    { label:["Checker Agent","(entitlement-checker)","Validates & approves"],type:"multi",  col:7,   row:2 },
+  out_sor:          { label:["Update System","of Record"],                                 type:"output",   col:8,   row:2 },
+  out_email:        { label:["Response Email","to Client"],                                type:"output",   col:8,   row:3 },
+};
+
+const EDGES = [
+  { from:"email_client",    to:"orchestrator_llm", label:"1. Receive Request" },
+  { from:"orchestrator_llm",to:"rai_policy",       label:"LLM Calls" },
+  { from:"rai_guardrail",   to:"orchestrator_llm", label:"Validated Response", dashed:true },
+  { from:"orchestrator_llm",to:"agent_state",      label:"" },
+  { from:"agent_state",     to:"action_router",    label:"" },
+  { from:"orchestrator_llm",to:"plan_parse",       label:"2. Plan" },
+  { from:"plan_parse",      to:"plan_decompose",   label:"" },
+  { from:"plan_decompose",  to:"plan_replan",      label:"on failure", dashed:true },
+  { from:"action_router",   to:"tool_db",          label:"3. Execute Tools" },
+  { from:"tool_db",         to:"mem_short",        label:"Read/Write Memory", dashed:true },
+  { from:"mem_long",        to:"mem_records",      label:"" },
+  { from:"tool_entitle",    to:"eval_self",        label:"4. Evaluate" },
+  { from:"eval_self",       to:"eval_quality",     label:"" },
+  { from:"eval_quality",    to:"maker_agent",      label:"Pass → Maker" },
+  { from:"eval_quality",    to:"plan_decompose",   label:"Fail → Re-plan", dashed:true },
+  { from:"maker_agent",     to:"inter_handoff",    label:"Handoff to Checker" },
+  { from:"inter_handoff",   to:"checker_agent",    label:"" },
+  { from:"checker_agent",   to:"out_sor",          label:"Approve" },
+  { from:"checker_agent",   to:"out_email",        label:"8. Notify Client" },
+  { from:"out_email",       to:"email_client",     label:"9. Feedback Loop", dashed:true },
+];
+
+const SUBGROUPS = [
+  { label:"ORCHESTRATOR AGENT",            nodeIds:["orchestrator_llm","agent_state","action_router"], color:"#6366f1" },
+  { label:"RAI GATEWAY (LLM Access)",      nodeIds:["rai_policy","rai_guardrail","rai_obs"],           color:"#f59e0b" },
+  { label:"PLANNING MODULE",               nodeIds:["plan_parse","plan_decompose","plan_replan"],       color:"#8b5cf6" },
+  { label:"MCP SERVER — TOOLS",            nodeIds:["tool_db","tool_entitle","tool_ticket","tool_email","tool_sor","tool_custom"], color:"#10b981" },
+  { label:"MEMORY SYSTEM",                 nodeIds:["mem_short","mem_episodic","mem_long","mem_records"], color:"#f97316" },
+  { label:"REFLECTION & EVALUATION",       nodeIds:["eval_self","eval_quality"],                       color:"#ef4444" },
+  { label:"MULTI-AGENT: MAKER-CHECKER",    nodeIds:["maker_agent","checker_agent","inter_handoff"],    color:"#0ea5e9" },
+];
+
+// White-theme node styles
+const TYPE_STYLE = {
+  io:       { bg:"#eff6ff", border:"#3b82f6", text:"#1d4ed8" },
+  agent:    { bg:"#eef2ff", border:"#6366f1", text:"#3730a3" },
+  guard:    { bg:"#fffbeb", border:"#d97706", text:"#92400e" },
+  plan:     { bg:"#faf5ff", border:"#9333ea", text:"#6b21a8" },
+  tool:     { bg:"#f0fdf4", border:"#059669", text:"#065f46" },
+  mem:      { bg:"#fff7ed", border:"#ea580c", text:"#7c2d12" },
+  db:       { bg:"#fefce8", border:"#ca8a04", text:"#713f12" },
+  eval:     { bg:"#fef2f2", border:"#dc2626", text:"#7f1d1d" },
+  evalgate: { bg:"#fef2f2", border:"#dc2626", text:"#7f1d1d" },
+  multi:    { bg:"#f0f9ff", border:"#0284c7", text:"#0c4a6e" },
+  infra:    { bg:"#f8fafc", border:"#64748b", text:"#1e293b" },
+  output:   { bg:"#f0fdf4", border:"#16a34a", text:"#14532d" },
+};
+
+const COL_W=148, ROW_H=120, NW=130, NH=72, PX=28, PY=28;
+const ns = Object.values(NODES);
+const maxCol = Math.max(...ns.map(n=>n.col));
+const maxRow = Math.max(...ns.map(n=>n.row));
+const SVG_W = PX*2 + (maxCol+1)*COL_W + 20;
+const SVG_H = PY*2 + (maxRow+1)*ROW_H + 20;
+
+function npos(node){ return { x: PX+node.col*COL_W, y: PY+node.row*ROW_H }; }
+function ncx(node){ return npos(node).x + NW/2; }
+function ncy(node){ return npos(node).y + NH/2; }
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs={}, children=[]){
+  const e = document.createElementNS(SVG_NS, tag);
+  for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  children.forEach(c => e.appendChild(c));
+  return e;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+const svg = document.getElementById("main-svg");
+svg.setAttribute("width", SVG_W);
+svg.setAttribute("height", SVG_H);
+
+// Defs (arrow marker)
+const defs = el("defs");
+const marker = el("marker",{ id:"arrowhead", markerWidth:"7", markerHeight:"7", refX:"6", refY:"3", orient:"auto" });
+marker.appendChild(el("path",{ d:"M0,0 L0,6 L7,3 z", fill:"#cbd5e1" }));
+defs.appendChild(marker);
+svg.appendChild(defs);
+
+// Subgroup layer
+const sgLayer = el("g");
+svg.appendChild(sgLayer);
+
+// Edge layer
+const edgeLayer = el("g");
+svg.appendChild(edgeLayer);
+
+// Node layer
+const nodeLayer = el("g");
+svg.appendChild(nodeLayer);
+
+// ── Draw subgroups ────────────────────────────────────────────────────────────
+const sgEls = {};
+SUBGROUPS.forEach(sg => {
+  const sgnodes = sg.nodeIds.map(id=>NODES[id]).filter(Boolean);
+  const xs = sgnodes.map(n=>npos(n).x);
+  const ys = sgnodes.map(n=>npos(n).y);
+  const x = Math.min(...xs)-10, y = Math.min(...ys)-18;
+  const w = Math.max(...xs)+NW+10 - x;
+  const h = Math.max(...ys)+NH+10 - y;
+
+  const g = el("g");
+  const rect = el("rect",{ x, y, width:w, height:h, rx:10, ry:10,
+    fill: sg.color+"0d", stroke:"#e2e8f0", "stroke-width":1.5, "stroke-dasharray":"5,3" });
+  const txt = el("text",{ x:x+9, y:y+12, "font-size":7.5, "font-weight":700,
+    fill:"#94a3b8", "font-family":"IBM Plex Mono, monospace" });
+  txt.textContent = sg.label;
+  g.appendChild(rect);
+  g.appendChild(txt);
+  sgLayer.appendChild(g);
+  sgEls[sg.label] = { g, rect, txt, color: sg.color };
+});
+
+// ── Draw edges ────────────────────────────────────────────────────────────────
+EDGES.forEach(edge => {
+  const fn = NODES[edge.from], tn = NODES[edge.to];
+  if(!fn||!tn) return;
+  const x1=ncx(fn), y1=ncy(fn), x2=ncx(tn), y2=ncy(tn);
+  const mx=(x1+x2)/2, my=(y1+y2)/2;
+  const path = el("path",{
+    d:`M ${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`,
+    fill:"none", stroke:"#cbd5e1", "stroke-width":1.2,
+    "stroke-dasharray": edge.dashed?"6,4":"none",
+    "marker-end":"url(#arrowhead)", opacity:0.7
+  });
+  edgeLayer.appendChild(path);
+});
+
+// ── Draw nodes ────────────────────────────────────────────────────────────────
+const nodeEls = {};
+Object.entries(NODES).forEach(([id, node]) => {
+  const s = TYPE_STYLE[node.type];
+  const pos = npos(node);
+  const g = el("g",{ style:"cursor:pointer" });
+
+  // glow ring (hidden by default)
+  const glow = el("rect",{ x:pos.x-5, y:pos.y-5, width:NW+10, height:NH+10,
+    rx:12, ry:12, fill:"none", stroke:"transparent", "stroke-width":3, opacity:0 });
+
+  // box
+  const rect = el("rect",{ x:pos.x, y:pos.y, width:NW, height:NH,
+    rx:7, ry:7, fill:s.bg, stroke:s.border, "stroke-width":1.5, opacity:0.38 });
+
+  g.appendChild(glow);
+  g.appendChild(rect);
+
+  // text lines
+  node.label.forEach((line, i) => {
+    const t = el("text",{
+      x: pos.x+NW/2,
+      y: pos.y + 16 + i*13,
+      "text-anchor":"middle",
+      "font-size": i===0 ? 9.5 : 8.5,
+      "font-weight": i===0 ? 700 : 400,
+      fill:"#9ca3af",
+      "font-family":"IBM Plex Mono, monospace",
+    });
+    t.textContent = line;
+    g.appendChild(t);
+  });
+
+  g.addEventListener("click", () => {
+    const found = STAGES.findIndex(s=>s.activeNodes.includes(id));
+    if(found !== -1) setStage(found === activeStage ? null : found);
+  });
+
+  nodeLayer.appendChild(g);
+  nodeEls[id] = { g, rect, glow, texts: Array.from(g.querySelectorAll("text")) };
+});
+
+// ── State & highlight logic ───────────────────────────────────────────────────
+let activeStage = null;
+let autoTimer = null;
+
+function setStage(idx) {
+  activeStage = idx;
+  const stage = idx !== null ? STAGES[idx] : null;
+  const activeSet = stage ? new Set(stage.activeNodes) : null;
+  const color = stage ? stage.color : "#6366f1";
+
+  // Update description
+  const descEl = document.getElementById("desc-bar");
+  descEl.style.color = stage ? color : "#9ca3af";
+  descEl.textContent = stage ? `▸ ${stage.description}` : "Select a stage above or click any node — or hit Auto-Play";
+
+  // Update stage buttons
+  document.querySelectorAll(".stage-btn").forEach((btn, i) => {
+    btn.classList.toggle("active", i === idx);
+    btn.style.setProperty("--sc", STAGES[i].color);
+  });
+
+  // Update nodes
+  Object.entries(nodeEls).forEach(([id, els]) => {
+    const s = TYPE_STYLE[NODES[id].type];
+    const isActive = !activeSet || activeSet.has(id);
+    els.rect.setAttribute("opacity", isActive ? 1 : 0.2);
+    els.rect.setAttribute("stroke", isActive && activeSet ? color : s.border);
+    els.rect.setAttribute("stroke-width", isActive && activeSet ? 2.5 : 1.5);
+    els.glow.setAttribute("stroke", isActive && activeSet ? color : "transparent");
+    els.glow.setAttribute("opacity", isActive && activeSet ? 0.45 : 0);
+    if(isActive && activeSet){
+      els.glow.style.filter = `drop-shadow(0 0 7px ${color})`;
+    } else {
+      els.glow.style.filter = "none";
+    }
+    els.texts.forEach((t, i) => {
+      t.setAttribute("fill", isActive ? (i===0 ? s.text : s.text+"cc") : "#d1d5db");
+    });
+  });
+
+  // Update subgroups
+  SUBGROUPS.forEach(sg => {
+    const se = sgEls[sg.label];
+    const isActive = !activeSet || sg.nodeIds.some(id=>activeSet.has(id));
+    se.rect.setAttribute("fill", isActive && activeSet ? sg.color+"18" : sg.color+"06");
+    se.rect.setAttribute("stroke", isActive && activeSet ? sg.color : "#e2e8f0");
+    se.txt.setAttribute("fill", isActive && activeSet ? sg.color : "#cbd5e1");
+  });
+}
+
+// ── Build stage buttons ───────────────────────────────────────────────────────
+const stageBar = document.getElementById("stage-bar");
+STAGES.forEach((s, i) => {
+  const btn = document.createElement("button");
+  btn.className = "stage-btn";
+  btn.style.setProperty("--sc", s.color);
+  btn.textContent = String(i+1).padStart(2,"0") + " " + s.label;
+  btn.addEventListener("click", () => {
+    stopAuto();
+    setStage(activeStage === i ? null : i);
+  });
+  stageBar.appendChild(btn);
+});
+
+// ── Auto-play ─────────────────────────────────────────────────────────────────
+function stopAuto(){
+  clearInterval(autoTimer);
+  autoTimer = null;
+  document.getElementById("btn-play").textContent = "▶ Auto-Play";
+}
+
+document.getElementById("btn-play").addEventListener("click", () => {
+  if(autoTimer){ stopAuto(); return; }
+  document.getElementById("btn-play").textContent = "⏸ Pause";
+  if(activeStage === null || activeStage >= STAGES.length-1) setStage(0);
+  autoTimer = setInterval(() => {
+    const next = (activeStage === null ? 0 : activeStage) + 1;
+    if(next >= STAGES.length){ stopAuto(); return; }
+    setStage(next);
+  }, 2200);
+});
+
+document.getElementById("btn-reset").addEventListener("click", () => {
+  stopAuto();
+  setStage(null);
+});
+
+// init
+setStage(null);
+</script>
+</body>
+</html>
