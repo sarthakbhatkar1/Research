@@ -1,17 +1,26 @@
-from pydantic import BaseModel, Field, model_validator
-from typing import Optional, List, Literal, Union
+from pydantic import BaseModel, Field
+from typing import Optional, List, Union, Literal, Annotated
 
 
 # =========================================================
-# 🔹 ENUMS / TYPES
+# 🔹 INPUT SCHEMA (OPENAI COMPLIANT)
 # =========================================================
 
-ImageSize = Literal["256x256", "512x512", "1024x1024"]
-ImageQuality = Literal["low", "medium", "high"]
-ImageBackground = Literal["auto", "transparent"]
-ResponseFormat = Literal["b64_json", "url"]
+class InputText(BaseModel):
+    type: Literal["input_text"]
+    text: str
 
-Mode = Literal["direct", "tool"]
+
+class InputImage(BaseModel):
+    type: Literal["input_image"]
+    image_url: Optional[str] = None
+    image_base64: Optional[str] = None
+    detail: Optional[Literal["low", "high", "auto", "original"]] = "auto"
+
+
+class InputMessage(BaseModel):
+    role: Literal["user"]
+    content: List[Union[InputText, InputImage]]
 
 
 # =========================================================
@@ -20,136 +29,134 @@ Mode = Literal["direct", "tool"]
 
 class ImageGenerationRequest(BaseModel):
     """
-    Unified request schema supporting:
+    Fully OpenAI Responses API compliant request.
+    Supports:
     - Direct image generation (gpt-image-1)
-    - Tool-based generation (text model + image_generation tool)
+    - Tool-based generation (gpt-4.1 + image_generation tool)
+    - Multimodal input (text + image)
     """
 
-    # Core
-    prompt: str = Field(..., description="Text prompt for image generation")
+    model: str = "gpt-image-1"
 
-    # Mode
-    mode: Mode = Field(
-        default="direct",
-        description="direct = gpt-image-1, tool = text model + image_generation tool"
-    )
+    # OpenAI supports BOTH formats
+    input: Union[str, List[InputMessage]]
 
-    # Model (flexible for future)
-    model: str = Field(
-        default="gpt-image-1",
-        description="Model name (gpt-image-1 OR gpt-4.1-mini for tool mode)"
-    )
-
-    # Optional configs
-    size: Optional[ImageSize] = "1024x1024"
-    quality: Optional[ImageQuality] = "high"
-    background: Optional[ImageBackground] = "auto"
+    # Image configs (used in direct mode)
+    size: Optional[Literal["256x256", "512x512", "1024x1024"]] = "1024x1024"
+    quality: Optional[Literal["low", "medium", "high"]] = "high"
+    background: Optional[Literal["auto", "transparent"]] = "auto"
     n: Optional[int] = Field(1, ge=1, le=10)
-    response_format: Optional[ResponseFormat] = "b64_json"
+    response_format: Optional[Literal["b64_json", "url"]] = "b64_json"
 
-    # Tool-specific
+    # Tool mode
     tools: Optional[List[dict]] = None
 
-    # -----------------------------------------------------
-    # 🔥 VALIDATION LOGIC
-    # -----------------------------------------------------
-
-    @model_validator(mode="after")
-    def validate_mode_and_model(self):
-        if self.mode == "direct":
-            if not self.model.startswith("gpt-image"):
-                raise ValueError(
-                    "Direct mode requires an image model like 'gpt-image-1'"
-                )
-
-        if self.mode == "tool":
-            if "image" in self.model:
-                raise ValueError(
-                    "Tool mode requires a text model like 'gpt-4.1-mini'"
-                )
-
-            if not self.tools:
-                self.tools = [{"type": "image_generation"}]
-
-        return self
-
 
 # =========================================================
-# 🔹 RAW OPENAI RESPONSE SCHEMAS
+# 🔹 RESPONSE SCHEMA (DISCRIMINATED UNION)
 # =========================================================
 
-# -------- Direct Mode --------
-class ImageGenerationDirect(BaseModel):
-    id: Optional[str]
+class OutputText(BaseModel):
+    type: Literal["output_text"]
+    text: str
+
+
+class ImageGeneration(BaseModel):
     type: Literal["image_generation"]
     image_base64: Optional[str] = None
     url: Optional[str] = None
 
 
-# -------- Tool Mode --------
-class ImageGenerationToolCall(BaseModel):
-    id: Optional[str]
+class ImageGenerationCall(BaseModel):
     type: Literal["image_generation_call"]
-    result: str  # base64 image
+    result: str  # base64
 
 
-# -------- Union --------
-RawImageOutput = Union[
-    ImageGenerationDirect,
-    ImageGenerationToolCall
+class ToolResult(BaseModel):
+    type: Literal["tool_result"]
+    output: Optional[list] = None
+
+
+# 🔥 Discriminated union (CRITICAL for correctness)
+ResponseItem = Annotated[
+    Union[
+        OutputText,
+        ImageGeneration,
+        ImageGenerationCall,
+        ToolResult
+    ],
+    Field(discriminator="type")
 ]
 
 
-class OpenAIImageResponse(BaseModel):
+class OpenAIResponse(BaseModel):
     id: str
-    object: Literal["response"]
+    object: str
     created: int
     model: str
-    output: List[RawImageOutput]
+    output: List[ResponseItem]
 
 
 # =========================================================
 # 🔹 NORMALIZED INTERNAL RESPONSE (SDK STANDARD)
 # =========================================================
 
-class ImageData(BaseModel):
+class NormalizedImage(BaseModel):
     b64: Optional[str] = None
     url: Optional[str] = None
 
 
-class ImageResponse(BaseModel):
+class NormalizedResponse(BaseModel):
     type: Literal["image"] = "image"
-    data: List[ImageData]
+    data: List[NormalizedImage]
     metadata: Optional[dict] = None
 
 
 # =========================================================
-# 🔹 TRANSFORM / ADAPTER
+# 🔹 TRANSFORM / ADAPTER (ROBUST)
 # =========================================================
 
-def normalize_image_response(resp: OpenAIImageResponse) -> ImageResponse:
-    images: List[ImageData] = []
+def normalize_openai_response(resp: OpenAIResponse) -> NormalizedResponse:
+    images: List[NormalizedImage] = []
 
     for item in resp.output:
 
-        # Direct API
+        # Direct image output
         if item.type == "image_generation":
             images.append(
-                ImageData(
+                NormalizedImage(
                     b64=item.image_base64,
                     url=item.url
                 )
             )
 
-        # Tool-based
+        # Tool-based image output
         elif item.type == "image_generation_call":
             images.append(
-                ImageData(
+                NormalizedImage(
                     b64=item.result
                 )
             )
 
-    return ImageResponse(
+        # Nested tool results (future-proof)
+        elif item.type == "tool_result" and item.output:
+            for sub in item.output:
+                if isinstance(sub, dict):
+                    if sub.get("type") == "image_generation":
+                        images.append(
+                            NormalizedImage(
+                                b64=sub.get("image_base64"),
+                                url=sub.get("url")
+                            )
+                        )
+                    elif sub.get("type") == "image_generation_call":
+                        images.append(
+                            NormalizedImage(
+                                b64=sub.get("result")
+                            )
+                        )
+
+    return NormalizedResponse(
         data=images,
         metadata={
             "model": resp.model,
@@ -160,13 +167,16 @@ def normalize_image_response(resp: OpenAIImageResponse) -> ImageResponse:
 
 
 # =========================================================
-# 🔹 OPTIONAL: SAFE MODEL ROUTING (FOR SDK)
+# 🔹 HELPER UTILITIES (OPTIONAL BUT USEFUL)
 # =========================================================
 
-SUPPORTED_IMAGE_MODELS = ["gpt-image-1"]
+def extract_base64_images(resp: OpenAIResponse) -> List[str]:
+    """Quick utility to get base64 images only"""
+    normalized = normalize_openai_response(resp)
+    return [img.b64 for img in normalized.data if img.b64]
 
 
-def validate_model(model: str, mode: Mode):
-    if mode == "direct":
-        if model not in SUPPORTED_IMAGE_MODELS:
-            raise ValueError(f"Unsupported image model: {model}")
+def extract_image_urls(resp: OpenAIResponse) -> List[str]:
+    """Quick utility to get URLs only"""
+    normalized = normalize_openai_response(resp)
+    return [img.url for img in normalized.data if img.url]
