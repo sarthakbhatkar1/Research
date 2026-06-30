@@ -31,7 +31,7 @@ from openai import AzureOpenAI
 from PIL import Image as PILImage
 
 # —— Config ————————————————————————————————————————————————
-os.environ.setdefault("AZURE_OPENAI_ENDPOINT", "https://lostvaynesarthak-2644-resource.services.ai.azure.com")
+os.environ.setdefault("AZURE_OPENAI_ENDPOINT", "")
 os.environ.setdefault("AZURE_API_VERSION", "2025-04-01-preview")
 
 UI_DIR = os.path.dirname(os.path.abspath(__file__))
