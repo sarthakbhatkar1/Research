@@ -16,5 +16,11 @@
   },
 
   "tier_rank": {"read": 0, "write": 1, "execute": 2, "irreversible": 3},
-  "gate_at_or_above": "write"
+  "gate_at_or_above": "write",
+
+  "target_arg_key": {
+    "send_money": "recipient",
+    "update_scheduled_transaction": "recipient"
+  },
+  "recipient_history_tools": ["get_most_recent_transactions", "get_scheduled_transactions"]
 }

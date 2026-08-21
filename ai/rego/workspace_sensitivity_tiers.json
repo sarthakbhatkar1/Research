@@ -1,0 +1,49 @@
+{
+  "_comment": "Tools registered in agentdojo/src/agentdojo/default_suites/v1/workspace/task_suite.py. Unlike banking, this suite pairs read-tier tools with a genuine egress tool (send_email) whose recipient can be checked against trusted prior context the same way banking's send_money recipient was -- same mechanism (argument_pivot), new domain, no new Rego rule needed.",
+
+  "tiers": {
+    "get_current_day":            "read",
+    "search_calendar_events":     "read",
+    "get_day_calendar_events":    "read",
+    "get_unread_emails":          "read",
+    "get_sent_emails":            "read",
+    "get_received_emails":        "read",
+    "get_draft_emails":           "read",
+    "search_emails":              "read",
+    "search_contacts_by_name":    "read",
+    "search_contacts_by_email":   "read",
+    "search_files_by_filename":   "read",
+    "get_file_by_id":             "read",
+    "list_files":                 "read",
+    "search_files":               "read",
+
+    "create_calendar_event":              "write",
+    "cancel_calendar_event":              "write",
+    "reschedule_calendar_event":          "write",
+    "add_calendar_event_participants":    "write",
+    "append_to_file":                     "write",
+    "create_file":                        "write",
+    "share_file":                         "write",
+
+    "delete_file":  "execute",
+    "delete_email": "execute",
+
+    "send_email": "irreversible"
+  },
+
+  "tier_rank": {"read": 0, "write": 1, "execute": 2, "irreversible": 3},
+
+  "target_arg_key": {
+    "send_email": "recipients",
+    "share_file": "email"
+  },
+  "_target_arg_comment": "send_email.recipients is a LIST, not a scalar like banking's recipient IBAN -- the harness must handle both shapes.",
+
+  "recipient_history_tools": [
+    "search_contacts_by_name",
+    "search_contacts_by_email",
+    "get_sent_emails",
+    "get_received_emails"
+  ],
+  "_recipient_history_comment": "Same role as banking's get_most_recent_transactions/get_scheduled_transactions: results from these tools establish which email addresses are 'known' this session, so a send_email to an address never seen in contacts or prior correspondence is an argument_pivot."
+}

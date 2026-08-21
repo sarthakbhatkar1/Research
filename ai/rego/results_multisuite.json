@@ -1,0 +1,30 @@
+{
+  "banking": {
+    "suite": "banking",
+    "n_attack_traces": 144,
+    "n_benign_traces": 25,
+    "benign_hard_deny_rate": 0.16,
+    "benign_soft_confirm_only_rate": 0.6,
+    "benign_clean_rate": 0.24,
+    "n_compromised_by_llm_alone": 93,
+    "n_compromised_hard_denied": 76,
+    "n_compromised_confirmed_only": 17,
+    "harm_not_silent_rate": 1.0,
+    "n_resisted_by_llm_alone": 51,
+    "n_resisted_also_flagged_by_policy": 34
+  },
+  "workspace": {
+    "suite": "workspace",
+    "n_attack_traces": 240,
+    "n_benign_traces": 46,
+    "benign_hard_deny_rate": 0.06521739130434782,
+    "benign_soft_confirm_only_rate": 0.34782608695652173,
+    "benign_clean_rate": 0.5869565217391305,
+    "n_compromised_by_llm_alone": 79,
+    "n_compromised_hard_denied": 57,
+    "n_compromised_confirmed_only": 22,
+    "harm_not_silent_rate": 1.0,
+    "n_resisted_by_llm_alone": 161,
+    "n_resisted_also_flagged_by_policy": 72
+  }
+}
