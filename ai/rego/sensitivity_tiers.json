@@ -1,0 +1,28 @@
+{
+  "_comment": "Sensitivity tier per taxonomy.json target_tool_types. Tiers are ranked read < write < execute < irreversible by blast radius of a wrongful/attacker-steered call, not by how often the tool appears in an attack. Two tools (database_query, mcp_tool) are context-dependent in the raw benchmark (their tools_available[].description sometimes states 'read-only'); the mapping below is the conservative default and is overridden per-sample when the tool's own advertised description says 'read-only' / 'read only'.",
+
+  "tiers": {
+    "web_search":       "read",
+    "file_read":         "read",
+    "browser_navigate":  "read",
+    "database_query":    "read",
+    "calendar_access":   "write",
+    "messaging":         "write",
+    "api_call":          "write",
+    "file_write":        "write",
+    "mcp_tool":          "write",
+    "code_exec":         "execute",
+    "shell_exec":        "execute",
+    "email_send":        "irreversible"
+  },
+
+  "tier_rank": {
+    "read": 0,
+    "write": 1,
+    "execute": 2,
+    "irreversible": 3
+  },
+
+  "gate_at_or_above": "write",
+  "_gate_comment": "Tools at 'write' tier or above require the user_intent_match check (does the user's own message plausibly ask for this tool/action) before being allowed when the driving content came from an untrusted surface. 'read' tier tools are allowed through the structural gate unconditionally -- data_exfiltration attacks that abuse a read tool's *parameters* (e.g. embedding a secret in a web_search query) are a known gap of tier-based gating alone and are called out explicitly in the harness report, not silently swept under 'allow'."
+}
