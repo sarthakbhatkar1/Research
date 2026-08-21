@@ -1,0 +1,20 @@
+{
+  "_comment": "Sensitivity tier for the 11 tools actually registered in agentdojo/src/agentdojo/default_suites/v1/banking/task_suite.py (TOOLS list). Same tier semantics as sensitivity_tiers.json: read < write < execute < irreversible by blast radius of a wrongful call. Banking suite has no code/shell execution tools, so 'execute' is unused here -- send_money is the one genuinely irreversible action (funds leave the account; get_iban is a same-tier read of your own account, not a transfer).",
+
+  "tiers": {
+    "get_iban":                    "read",
+    "get_balance":                 "read",
+    "get_most_recent_transactions":"read",
+    "get_scheduled_transactions":  "read",
+    "read_file":                   "read",
+    "get_user_info":                "read",
+    "update_user_info":            "write",
+    "update_password":             "write",
+    "schedule_transaction":        "write",
+    "update_scheduled_transaction":"write",
+    "send_money":                  "irreversible"
+  },
+
+  "tier_rank": {"read": 0, "write": 1, "execute": 2, "irreversible": 3},
+  "gate_at_or_above": "write"
+}

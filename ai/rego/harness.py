@@ -149,6 +149,7 @@ def build_policy_input(sample: dict) -> dict | None:
             "sensitivity_tier": resolve_sensitivity_tier(tool_name, sample),
         },
         "tool_already_in_flight": tool_name in tools_already_in_flight(sample),
+        "argument_pivot": False,  # AgentInjectionBench has no structured args to compare -- see policy.rego docstring
         "user_intent_match": user_intent_match(sample, tool_name),
         "definition_layer_flag": definition_layer_flag(sample),
     }

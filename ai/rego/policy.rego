@@ -31,6 +31,23 @@ import rego.v1
 #                              content, is the single strongest structural
 #                              tell in this benchmark: 129/133 pivot cases are
 #                              attacks vs. 13/49 same-tool-continuation cases.
+#                              NOTE: this exemption is deliberately NOT
+#                              granted at execute/irreversible tier -- see
+#                              continuation_exempt below. A "legitimize the
+#                              tool early, weaponize it later" multi-turn
+#                              attack defeats a same-tool-continuation
+#                              exemption at exactly the tiers where a repeat
+#                              call does the most damage.
+#   argument_pivot            : bool -- for a REPEAT call to an
+#                              already-in-flight tool, does this call's
+#                              target-identifying argument (e.g. a
+#                              recipient account) diverge from every value
+#                              seen in trusted prior context this session.
+#                              Real signal where the harness can compute it
+#                              (AgentDojo's send_money against known
+#                              transaction-history recipients); defaults to
+#                              false where the source data has no structured
+#                              args to compare (AgentInjectionBench).
 #   user_intent_match        : bool -- secondary/softer signal: does the
 #                              user's own message plausibly call for this
 #                              tool/action (token-overlap heuristic). Used
@@ -66,12 +83,26 @@ tier_at_or_above_gate if {
 
 deny_poisoned_definition if input.definition_layer_flag == true
 
+high_risk_tier if tier_rank[input.proposed_tool.sensitivity_tier] >= tier_rank.execute
+
+# A repeat call to an already-in-flight tool is exempt from the pivot gate
+# ONLY at write tier, and ONLY when its arguments don't diverge from trusted
+# prior context. At execute/irreversible tier, or whenever argument_pivot
+# fires, "already used this tool" does not excuse this specific call --
+# closing the "legitimize early, weaponize later" multi-turn evasion found
+# in AgentInjectionBench's multi_turn_stateful category.
+continuation_exempt if {
+	input.tool_already_in_flight == true
+	not high_risk_tier
+	object.get(input, "argument_pivot", false) != true
+}
+
 # Primary gate: an untrusted surface is steering the agent toward a
-# higher-tier tool it has NOT already been using this session, i.e. a pivot.
+# higher-tier tool that isn't covered by the continuation exemption above.
 untrusted_pivot if {
 	is_untrusted
 	tier_at_or_above_gate
-	input.tool_already_in_flight == false
+	not continuation_exempt
 }
 
 deny_pivot_no_intent_match if {
