@@ -27,6 +27,38 @@ async def debug_cache(client_id=None, show_values: bool = False):
     """
     import time
     from datetime import datetime as _dt
+    from datetime import timedelta
+
+    def _json_safe(v):
+        """Recursively coerce any value into something json-serializable.
+        InMemoryCache.set_cache stores values with zero serialization
+        (confirmed: self.cache_dict[key] = value, no encoding step), so L1
+        can hold raw Python objects - timedelta is the one we've hit twice
+        now, but there's no guarantee it's the only one litellm's callbacks
+        will ever put in there. This is a blanket net for the whole response
+        rather than chasing individual fields one crash at a time."""
+        if v is None or isinstance(v, (bool, int, float, str)):
+            return v
+        if isinstance(v, dict):
+            return {str(k): _json_safe(val) for k, val in v.items()}
+        if isinstance(v, (list, tuple, set)):
+            return [_json_safe(x) for x in v]
+        if isinstance(v, timedelta):
+            return v.total_seconds()
+        if hasattr(v, "isoformat"):  # datetime/date
+            try:
+                return v.isoformat()
+            except Exception:
+                pass
+        if isinstance(v, bytes):
+            try:
+                return v.decode("utf-8", errors="replace")
+            except Exception:
+                pass
+        try:
+            return str(v)
+        except Exception:
+            return "<unrepresentable>"
 
     router = getattr(litellm.proxy.proxy_server, "llm_router", None)
     logger.info(f"[CUSTOM_CACHING] router: {router}")
@@ -192,6 +224,35 @@ async def debug_cache(client_id=None, show_values: bool = False):
     }
     routing_groups_cfg = getattr(router, '_routing_groups', {})
 
+    def _parse_latency_value(x):
+        """litellm's own lowest_latency.py success handler only converts the
+        raw response duration to a float-seconds-per-token value when
+        response_obj is a ModelResponse with usage info. For any other call
+        type routed through the same group (embeddings, etc.), it appends
+        the raw timedelta object unconverted, which round-trips through the
+        cache/JSON as str(timedelta), e.g. "0:00:13.563140" - not a valid
+        float() literal. Handle both shapes instead of crashing the endpoint
+        on one malformed sample."""
+        if isinstance(x, (int, float)):
+            return float(x)
+        if isinstance(x, timedelta):
+            return x.total_seconds()
+        if isinstance(x, str):
+            try:
+                return float(x)
+            except ValueError:
+                pass
+            # str(timedelta(...)) shapes: "H:MM:SS.ffffff" or "D day(s), H:MM:SS.ffffff"
+            try:
+                parts = x.split(", ")
+                time_part = parts[-1]
+                days = int(parts[0].split()[0]) if len(parts) > 1 else 0
+                h, m, s = time_part.split(":")
+                return days * 86400 + int(h) * 3600 + int(m) * 60 + float(s)
+            except (ValueError, IndexError):
+                return None
+        return None
+
     def _cooldown_status(dep_id: str) -> dict:
         """Reads the SAME cache CooldownCache writes to (deployment:{id}:cooldown).
         Computed against timestamp+cooldown_time ourselves rather than trusting
@@ -283,11 +344,17 @@ async def debug_cache(client_id=None, show_values: bool = False):
                     if not isinstance(dep_data, dict) or dep_id in dep_id_seen:
                         continue
                     dep_id_seen.add(dep_id)
-                    latency_arr = [float(x) for x in dep_data.get("latency", [])]
+                    latency_arr = [
+                        v for v in (_parse_latency_value(x) for x in dep_data.get("latency", []))
+                        if v is not None
+                    ]
                     # time_to_first_token is a real, separately-cached list used by
                     # litellm to rank deployments for streaming requests. It's a list,
                     # not a dict, so the old traffic_history filter silently dropped it.
-                    ttft_arr = [float(x) for x in dep_data.get("time_to_first_token", [])]
+                    ttft_arr = [
+                        v for v in (_parse_latency_value(x) for x in dep_data.get("time_to_first_token", []))
+                        if v is not None
+                    ]
                     traffic_history = {
                         k: v for k, v in dep_data.items()
                         if k not in ("latency", "time_to_first_token") and isinstance(v, dict)
@@ -458,4 +525,4 @@ async def debug_cache(client_id=None, show_values: bool = False):
     result["total_routing_groups"] = len(routing_groups_cfg)
     result["global_timeout_s"] = getattr(litellm, "request_timeout", None)
 
-    return result
+    return _json_safe(result)
