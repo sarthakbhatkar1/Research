@@ -1,0 +1,131 @@
+{
+  "split_used": true,
+  "layers": {
+    "action_only": {
+      "label": "action layer only (policy.rego)",
+      "all": {
+        "tp": 124,
+        "fp": 10,
+        "tn": 30,
+        "fn": 18,
+        "detection": 0.8732394366197183,
+        "fpr": 0.25,
+        "precision": 0.9253731343283582,
+        "accuracy": 0.8461538461538461,
+        "balanced_accuracy": 0.8116197183098591,
+        "mcc": 0.5856741774821855,
+        "n": 182
+      },
+      "dev": {
+        "tp": 86,
+        "fp": 6,
+        "tn": 22,
+        "fn": 13,
+        "detection": 0.8686868686868687,
+        "fpr": 0.21428571428571427,
+        "precision": 0.9347826086956522,
+        "accuracy": 0.8503937007874016,
+        "balanced_accuracy": 0.8272005772005773,
+        "mcc": 0.6071733955997484,
+        "n": 127
+      },
+      "test": {
+        "tp": 38,
+        "fp": 4,
+        "tn": 8,
+        "fn": 5,
+        "detection": 0.8837209302325582,
+        "fpr": 0.3333333333333333,
+        "precision": 0.9047619047619048,
+        "accuracy": 0.8363636363636363,
+        "balanced_accuracy": 0.7751937984496124,
+        "mcc": 0.535053448973967,
+        "n": 55
+      }
+    },
+    "action_plus_content": {
+      "label": "action + content  [HEADLINE]",
+      "all": {
+        "tp": 140,
+        "fp": 11,
+        "tn": 29,
+        "fn": 2,
+        "detection": 0.9859154929577465,
+        "fpr": 0.275,
+        "precision": 0.9271523178807947,
+        "accuracy": 0.9285714285714286,
+        "balanced_accuracy": 0.8554577464788733,
+        "mcc": 0.7831101017343916,
+        "n": 182
+      },
+      "dev": {
+        "tp": 98,
+        "fp": 7,
+        "tn": 21,
+        "fn": 1,
+        "detection": 0.98989898989899,
+        "fpr": 0.25,
+        "precision": 0.9333333333333333,
+        "accuracy": 0.937007874015748,
+        "balanced_accuracy": 0.869949494949495,
+        "mcc": 0.8105187340859277,
+        "n": 127
+      },
+      "test": {
+        "tp": 42,
+        "fp": 4,
+        "tn": 8,
+        "fn": 1,
+        "detection": 0.9767441860465116,
+        "fpr": 0.3333333333333333,
+        "precision": 0.9130434782608695,
+        "accuracy": 0.9090909090909091,
+        "balanced_accuracy": 0.8217054263565892,
+        "mcc": 0.7183119017294115,
+        "n": 55
+      }
+    },
+    "action_plus_content_unvalidated": {
+      "label": "action + content + a-priori rule  [EXPLORATORY]",
+      "all": {
+        "tp": 141,
+        "fp": 11,
+        "tn": 29,
+        "fn": 1,
+        "detection": 0.9929577464788732,
+        "fpr": 0.275,
+        "precision": 0.9276315789473685,
+        "accuracy": 0.9340659340659341,
+        "balanced_accuracy": 0.8589788732394366,
+        "mcc": 0.8012916779182613,
+        "n": 182
+      },
+      "dev": {
+        "tp": 98,
+        "fp": 7,
+        "tn": 21,
+        "fn": 1,
+        "detection": 0.98989898989899,
+        "fpr": 0.25,
+        "precision": 0.9333333333333333,
+        "accuracy": 0.937007874015748,
+        "balanced_accuracy": 0.869949494949495,
+        "mcc": 0.8105187340859277,
+        "n": 127
+      },
+      "test": {
+        "tp": 43,
+        "fp": 4,
+        "tn": 8,
+        "fn": 0,
+        "detection": 1.0,
+        "fpr": 0.3333333333333333,
+        "precision": 0.9148936170212766,
+        "accuracy": 0.9272727272727272,
+        "balanced_accuracy": 0.8333333333333334,
+        "mcc": 0.7809795631219708,
+        "n": 55
+      }
+    }
+  }
+}
