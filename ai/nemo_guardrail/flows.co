@@ -1,0 +1,48 @@
+define bot inform refuse_respond_input
+  '{\
+    "raiGuardVersion": 1.0,\
+    "isGuarded": true,\
+    "useResponseMessage": false,\
+    "confidence": 1.0,\
+    "guardName": "inputSafetyCheck",\
+    "errorMessage": "Input Moderation Check Failed",\
+    "reason": "$review_reason",\
+    "responseMessage": ""\
+  }\
+  '
+
+define bot inform respond_safe_input
+  '{\
+    "raiGuardVersion": 1.0,\
+    "isGuarded": false,\
+    "useResponseMessage": false,\
+    "confidence": 1.0,\
+    "guardName": "inputSafetyCheck",\
+    "errorMessage": "",\
+    "reason": "$review_reason",\
+    "responseMessage": ""\
+  }\
+  '
+
+define flow self check input
+  $review_reason = ""
+  $allowed = execute self_check_input
+
+  if not $allowed
+    # Second opinion on the blocked input.
+    $review = ...
+    $review_verdict = " ".join($review.split('"')[1:2])
+    $review_reason = " ".join($review.split('"')[3:4]).replace("\\", " ")
+    $review_reason = " ".join($review_reason.split())
+
+    if $review_verdict == "FalsePositive"
+      bot inform respond_safe_input
+      stop
+
+    if not $review_reason
+      $review_reason = "Input blocked by Responsible AI policy."
+
+    bot inform refuse_respond_input
+    stop
+  else
+    bot inform respond_safe_input
