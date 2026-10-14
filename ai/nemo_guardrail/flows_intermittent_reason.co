@@ -1,0 +1,43 @@
+define bot inform refuse_respond_input
+  '{\
+    "raiGuardVersion": 1.0,\
+    "isGuarded": true,\
+    "useResponseMessage": false,\
+    "confidence": 1.0,\
+    "guardName": "inputSafetyCheck",\
+    "errorMessage": "Input Moderation Check Failed",\
+    "reason": "",\
+    "responseMessage": ""\
+  }\
+  '
+
+define bot inform respond_safe_input
+  '{\
+    "raiGuardVersion": 1.0,\
+    "isGuarded": false,\
+    "useResponseMessage": false,\
+    "confidence": 1.0,\
+    "guardName": "inputSafetyCheck",\
+    "errorMessage": "",\
+    "reason": "",\
+    "responseMessage": ""\
+  }\
+  '
+
+define flow self check input
+  $allowed = execute self_check_input
+
+  if not $allowed
+    # Second opinion on the blocked input. The reviewer writes its reasoning first, then a verdict.
+    # Only the verdict is used. The reasoning is not returned.
+    $review = ...
+    $review_verdict = " ".join($review.split('"')[-2:-1])
+
+    if $review_verdict == "FalsePositive"
+      bot inform respond_safe_input
+      stop
+
+    bot inform refuse_respond_input
+    stop
+  else
+    bot inform respond_safe_input
